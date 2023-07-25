@@ -1,9 +1,4 @@
-# Ignorer les dossiers
-/data
-/cinecomedies_scraper
-
 # Ignorer les fichiers
-df.ipynb
 test1.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
