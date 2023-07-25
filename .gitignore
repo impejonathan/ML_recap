@@ -1,4 +1,6 @@
 /data
+/cinecomedies_scraper
+df.ipynb
 test.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
