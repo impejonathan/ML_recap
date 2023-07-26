@@ -130,8 +130,8 @@ class FilmAgenda(CrawlSpider):
             item['nominations'] = 0
             item['prix'] = 0
                 
-        item['réalisateur '] = response.css('span.light + span.blue-link::text').get()
-        item['distributeur '] = response.css('div.item span.that.blue-link::text').get()
+        item['réalisateur'] = response.css('span.light + span.blue-link::text').get()
+        item['distributeur'] = response.css('div.item span.that.blue-link::text').get()
 
         # Nettoyer la description en supprimant les sauts de ligne et les espaces inutiles
         description = response.xpath('//div[@class="content-txt "]//text()').get()
