@@ -3,5 +3,57 @@
 {% comment %} ------------prediction---------- {% endcomment %}
 
 {% block content %}
-page prediction
+<div class="container-fluid m-3">
+    <h1 class="mt-4 mb-4">Page des film a venir </h1>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Titre</th>
+                    <th>Acteur 1</th>
+                    <th>Acteur 2</th>
+                    <th>Acteur 3</th>
+                    <th>Réalisateur</th>
+                    <th>Distributeur</th>
+                    <th>Note presse</th>
+                    <th>Note spectateur</th>
+                    <th>Durée</th>
+                    <th>Genre</th>
+                    <th>Pays</th>
+                    {% comment %} <th>Type</th> {% endcomment %}
+                    {% comment %} <th>Budget</th> {% endcomment %}
+                    <th>Nominations</th>
+                    <th>Prix</th>
+                    {% comment %} <th>Description</th> {% endcomment %}
+                    {% comment %} <th>Date</th> {% endcomment %}
+                    <th>Année de production</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for index, row in data.iterrows %}
+                <tr>
+                    <td>{{ row.titre }}</td>
+                    <td>{{ row.acteur_1 }}</td>
+                    <td>{{ row.acteur_2 }}</td>
+                    <td>{{ row.acteur_3 }}</td>
+                    <td>{{ row.réalisateur }}</td>
+                    <td>{{ row.distributeur }}</td>
+                    <td>{{ row.note_presse }}</td>
+                    <td>{{ row.note_spectateur }}</td>
+                    <td>{{ row.duree }}</td>
+                    <td>{{ row.genre }}</td>
+                    <td>{{ row.pays }}</td>
+                    {% comment %} <td>{{ row.type }}</td> {% endcomment %}
+                    {% comment %} <td>{% if not row.budget|default_if_none:"N/A" %}{{ row.budget }}{% else %} pas d'information {% endif %}</td> {% endcomment %}
+                    <td>{{ row.nominations }}</td>
+                    <td>{{ row.prix }}</td>
+                    {% comment %} <td class="description-scroll" title="{{ row.description }}">{{ row.description|slice:":20" }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.date }}</td> {% endcomment %}
+                    <td>{{ row.annee_production }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock content %}
