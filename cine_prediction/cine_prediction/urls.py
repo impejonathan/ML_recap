@@ -24,7 +24,9 @@ urlpatterns = [
     path('signup', views.signup_page, name='signup'),
     path('logout/', views.logout_user, name='logout'),
     path('prediction', views.prediction_page, name='prediction'),
-    path('envoi_prediction', views.envoi_prediction_page, name='envoi_prediction'),
-    path('prediction_VS_reel', views.prediction_VS_reel_page, name='prediction_VS_reel'),
+    path('bot', views.bot, name='bot'),
+    path('prediction_VS_reel', views.prediction_vs_reel_page, name='prediction_VS_reel'),
+    path('scraping/', views.scraping_view, name='scraping'),
+
 
 ]

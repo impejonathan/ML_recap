@@ -1,0 +1,21 @@
+{% extends 'apllication_cine/base.html' %}
+
+{% block content %}
+<div class="container m-3 mx-auto">
+    <h1 class="mt-4 mb-4">Optimisation des recettes pour les salles de cinéma</h1>
+    <div class="row">
+        {% for jour, films in jours_organises.items %}
+        <div class="col-lg-3 col-md-6 mb-4">
+            <h3>{{ jour|title }}</h3>
+            {% for film, prediction in films %}
+            <p>
+                <strong>Salle {{ forloop.counter }} :</strong> {{ salle_capacities|get_item:forloop.counter0 }} personnes<br>
+                <strong>Prédiction :</strong> {{ prediction }} pour la semaines<br>
+                <strong>Titre :</strong> {{ film }}
+            </p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}

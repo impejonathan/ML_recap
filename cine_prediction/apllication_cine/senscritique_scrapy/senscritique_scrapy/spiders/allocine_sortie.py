@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 
 
+
 def clean_date(date_str):
     if isinstance(date_str, float):  # Ignorer les valeurs de type float
         return None
@@ -51,46 +52,10 @@ def clean_date(date_str):
 
 
 
-def convert_budget(budget):
-    if pd.isna(budget):
-        return np.nan
-
-    budget = budget.replace('US$', '').replace('$', '').replace('SEK', '').replace('M€', '00000').replace('mi', '000000').replace(',', '').replace('.', '').strip()
-
-    if 'mil' in budget:
-        budget = budget.replace('mil', '000')
-
-    budget = ''.join([c for c in budget if c.isdigit() or c == '-'])
-
-    if not budget or budget == '-':
-        return np.nan
-
-    return int(budget)
-
-def update_budget(budget):
-    if pd.isna(budget):
-        return np.nan
-
-    if budget > 450000000:
-        return 450000000
-
-    if budget < 1000:
-        return budget * 1000
-
-    return budget
-
 
 
 def convert_to_minutes(time: str) -> int or None:
-    '''
-    Convert the duration of a movie to minutes.
 
-    Args:
-        time (str): The duration of a movie in the format 'h min' or 'h'.
-
-    Returns:
-        [int, None]: The duration of the movie in minutes or None if the duration is invalid.
-    '''
     if time:
         # Remove any leading/trailing whitespace or newline characters
         time = time.strip()
@@ -156,18 +121,6 @@ class SenscritiqueSpider(CrawlSpider):
         
         item['distributeur'] = response.css('div.item span.that.blue-link::text').get()
         
-        item['note_presse'] = response.css(
-            'div.rating-item:nth-child(1) > div:nth-child(1) > div:nth-child(2) > span:nth-child(2)::text').get()
-
-        item['note_spectateur'] = response.css(
-            'div.rating-item:nth-child(2) > div:nth-child(1) > div:nth-child(2) > span:nth-child(2)::text').get()
-
-        # Remplacer les occurrences de "--" par NaN
-        if item['note_presse'] == '--':
-            item['note_presse'] = None
-        if item['note_spectateur'] == '--':
-            item['note_spectateur'] = None
-
 
         duration = response.xpath(
             '//div[@class="meta-body-item meta-body-info"]/span[@class="spacer"]/following-sibling::text()[1]').get()
@@ -185,16 +138,6 @@ class SenscritiqueSpider(CrawlSpider):
         else:
             item['pays'] = None
 
-            
-        
-        
-        item['type'] = response.xpath(
-            '//span[@class="what light" and contains(text(), "Type de film")]/following-sibling::span[@class="that"]/text()').get()
-
-        # Utiliser la fonction pour extraire le budget et gérer le cas où il est None
-        budget = response.xpath(
-                '//span[@class="what light" and contains(text(), "Budget")]/following-sibling::span[@class="that"]/text()').get()
-        item['budget'] = update_budget(convert_budget(budget))
 
 
         # Utiliser la fonction pour extraire les récompenses et gérer les cas vides, 5 nominations ou 1 prix et 8 nominations
