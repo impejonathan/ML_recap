@@ -3,12 +3,12 @@
 {% comment %} ------------prediction---------- {% endcomment %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container">
     <h1 class="mt-4 mb-4">Page des film a venir </h1>
     <br>
     <form action="{% url 'scraping' %}" method="post">
         {% csrf_token %}
-        <input type="submit" value="Lancer le scrapping">
+        <input type="submit"  class="btn btn-primary mt-3" value="Lancer la prediction">
     </form>
     <br><br>
     <div class="table-responsive">
@@ -20,15 +20,15 @@
                     <th>Acteur 1</th>
                     <th>Acteur 2</th>
                     <th>Acteur 3</th>
-                    <th>Réalisateur</th>
-                    <th>Distributeur</th>
+                    {% comment %} <th>Réalisateur</th> {% endcomment %}
+                    {% comment %} <th>Distributeur</th> {% endcomment %}
                     <th>Durée</th>
                     <th>Genre</th>
-                    <th>Pays</th>
-                    <th>Nominations</th>
-                    <th>Prix</th>
+                    {% comment %} <th>Pays</th> {% endcomment %}
+                    {% comment %} <th>Nominations</th> {% endcomment %}
+                    {% comment %} <th>Prix</th> {% endcomment %}
                     <th>Date</th>
-                    <th>Année de production</th>
+                    {% comment %} <th>Année de production</th> {% endcomment %}
                 </tr>
             </thead>
             <tbody>
@@ -39,15 +39,15 @@
                     <td>{{ row.acteur_1 }}</td>
                     <td>{{ row.acteur_2 }}</td>
                     <td>{{ row.acteur_3 }}</td>
-                    <td>{{ row.réalisateur }}</td>
-                    <td>{{ row.distributeur }}</td>
+                    {% comment %} <td>{{ row.realisateur }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.distributeur }}</td> {% endcomment %}
                     <td>{{ row.duree }}</td>
                     <td>{{ row.genre }}</td>
-                    <td>{{ row.pays }}</td>
-                    <td>{{ row.nominations }}</td>
-                    <td>{{ row.prix }}</td>
+                    {% comment %} <td>{{ row.pays }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.nominations }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.prix }}</td> {% endcomment %}
                     <td>{{ row.date }}</td>
-                    <td>{{ row.annee_production }}</td>
+                    {% comment %} <td>{{ row.annee_production }}</td> {% endcomment %}
                 </tr>
                 {% endfor %}
             </tbody>

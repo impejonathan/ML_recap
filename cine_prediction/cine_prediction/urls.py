@@ -27,6 +27,7 @@ urlpatterns = [
     path('bot', views.bot, name='bot'),
     path('prediction_VS_reel', views.prediction_vs_reel_page, name='prediction_VS_reel'),
     path('scraping/', views.scraping_view, name='scraping'),
+    # path('historique/', views.historique_view, name='historique'),
 
 
 ]

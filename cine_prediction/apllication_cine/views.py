@@ -15,7 +15,8 @@ import numpy as np
 import subprocess
 
 from django.template.defaulttags import register
-
+import pyodbc
+from dotenv import load_dotenv
 
 
 # Create your views here.
@@ -66,39 +67,34 @@ def signup_page(request):
 
 
 # # @login_required(login_url='login')
-# def prediction_page(request):
-#     # Récupérer le répertoire du fichier views.py (chemin relatif)
-#     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-#     # Construire le chemin complet vers le fichier CSV en utilisant le chemin relatif
-#     csv_path = os.path.normpath(os.path.join(current_dir, 'senscritique_scrapy/senscritique_scrapy/spiders/allocine_sortie.csv'))
-
-#     # Charger les données du CSV en utilisant pandas
-#     data = pd.read_csv(csv_path)
-
-#     # Transmettre les données au template pour les afficher
-#     return render(request, 'apllication_cine/prediction.html', context={'data': data})
-
-
-
 
 def prediction_page(request):
+    # Charger les variables d'environnement à partir du fichier .env
+    load_dotenv()
+
+    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
+    server = os.environ['DB_SERVER']
+    database = os.environ['DB_DATABASE']
+    username = os.environ['DB_USERNAME']
+    password = os.environ['DB_PASSWORD']
+    driver = os.environ['DRIVER']
+
+    # Construire la chaîne de connexion à la base de données
+    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
+    # Exécuter une requête SQL pour récupérer les données de la table films_prediction
+    data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
+
     # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Construire le chemin complet vers le fichier CSV en utilisant le chemin relatif
-    csv_path = os.path.normpath(os.path.join(current_dir, 'senscritique_scrapy/senscritique_scrapy/spiders/allocine_sortie.csv'))
-
-    # Charger les données du CSV en utilisant pandas
-    data = pd.read_csv(csv_path)
 
     # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'test_cine.pkl'))
+    model_path = os.path.normpath(os.path.join(current_dir, 'test_model_jo.pkl'))
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
     # Préparer les données pour la prédiction
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "réalisateur", "distributeur", "genre", "pays"]
+    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "pays"]
     numerical_features = ["duree", "nominations", "prix", "annee_production"]
     X = data[categorical_features + numerical_features]
 
@@ -109,12 +105,41 @@ def prediction_page(request):
     data['prediction'] = np.floor(predictions / 2000).astype(int)
     data = data.sort_values(by='prediction', ascending=False)
 
-
     # Transmettre les données au template pour les afficher
     return render(request, 'apllication_cine/prediction.html', context={'data': data})
 
 
 
+# def prediction_page(request):
+#     # Récupérer le répertoire du fichier views.py (chemin relatif)
+#     current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+#     # Construire le chemin complet vers le fichier CSV en utilisant le chemin relatif
+#     csv_path = os.path.normpath(os.path.join(current_dir, 'senscritique_scrapy/senscritique_scrapy/spiders/allocine_sortie.csv'))
+
+#     # Charger les données du CSV en utilisant pandas
+#     data = pd.read_csv(csv_path)
+
+#     # Charger le modèle pickles
+#     model_path = os.path.normpath(os.path.join(current_dir, 'test_cine.pkl'))
+#     with open(model_path, 'rb') as f:
+#         model = pickle.load(f)
+
+#     # Préparer les données pour la prédiction
+#     categorical_features = ["acteur_1", "acteur_2", "acteur_3", "réalisateur", "distributeur", "genre", "pays"]
+#     numerical_features = ["duree", "nominations", "prix", "annee_production"]
+#     X = data[categorical_features + numerical_features]
+
+#     # Faire la prédiction
+#     predictions = model.predict(X)
+
+#     # Ajouter les prédictions aux données
+#     data['prediction'] = np.floor(predictions / 2000).astype(int)
+#     data = data.sort_values(by='prediction', ascending=False)
+
+
+#     # Transmettre les données au template pour les afficher
+#     return render(request, 'apllication_cine/prediction.html', context={'data': data})
 
 
 
@@ -140,18 +165,46 @@ def scraping_view(request):
     
     
     
+    
+    
+    
+ 
+    
+    
+    
+    
 # @login_required(login_url='login')   
 def bot(request):
-    # Récupérer les prédictions pour les films
+    # Charger les variables d'environnement à partir du fichier .env
+    load_dotenv()
+
+    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
+    server = os.environ['DB_SERVER']
+    database = os.environ['DB_DATABASE']
+    username = os.environ['DB_USERNAME']
+    password = os.environ['DB_PASSWORD']
+    driver = os.environ['DRIVER']
+
+    # Construire la chaîne de connexion à la base de données
+    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
+    # Exécuter une requête SQL pour récupérer les données de la table films_prediction
+    data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
+
+    # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.normpath(os.path.join(current_dir, 'senscritique_scrapy/senscritique_scrapy/spiders/allocine_sortie.csv'))
-    data = pd.read_csv(csv_path)
-    model_path = os.path.normpath(os.path.join(current_dir, 'test_cine.pkl'))
+
+    # Charger le modèle pickles
+    model_path = os.path.normpath(os.path.join(current_dir, 'test_model_jo.pkl'))
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "réalisateur", "distributeur", "genre", "pays"]
+
+    # Préparer les données pour la prédiction
+    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "pays"]
     numerical_features = ["duree", "nominations", "prix", "annee_production"]
     X = data[categorical_features + numerical_features]
+
+    # Faire la prédiction
     predictions = model.predict(X)
     data['prediction'] = np.floor(predictions / 2000).astype(int)
 
@@ -180,35 +233,66 @@ def bot(request):
 
     jours_organises['lundi'] = [[film[0], int(film[1] * 0.50)] for film in sorted(basse_prediction, key=lambda x: x[1], reverse=True)]
     jours_organises['jeudi'] = [[film[0], int(film[1] * 0.50)] for film in sorted(basse_prediction, key=lambda x: x[1], reverse=True)]
-
-
-
+    
     return render(request, 'apllication_cine/bot.html', context={'jours_organises': jours_organises, 'salle_capacities': salle_capacities})
 
     
-    
 @register.filter
 def get_item(list, index):
-    return list[index]
+        return list[index]
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
 # @login_required(login_url='login')
 
+from datetime import datetime
+from django.contrib import messages
+
 def prediction_vs_reel_page(request):
+    # Charger les variables d'environnement à partir du fichier .env
+    load_dotenv()
+
+    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
+    server = os.environ['DB_SERVER']
+    database = os.environ['DB_DATABASE']
+    username = os.environ['DB_USERNAME']
+    password = os.environ['DB_PASSWORD']
+    driver = os.environ['DRIVER']
+
+    # Construire la chaîne de connexion à la base de données
+    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
+    # Exécuter une requête SQL pour récupérer les données de la table films_prediction
+    data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
+
     # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    # Construire le chemin complet vers le fichier CSV en utilisant le chemin relatif
-    csv_path = os.path.normpath(os.path.join(current_dir, 'senscritique_scrapy/senscritique_scrapy/spiders/allocine_sortie.csv'))
-    # Charger les données du CSV en utilisant pandas
-    data = pd.read_csv(csv_path)
 
     # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'test_cine.pkl'))
+    model_path = os.path.normpath(os.path.join(current_dir, 'test_model_jo.pkl'))
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
     # Préparer les données pour la prédiction
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "réalisateur", "distributeur", "genre", "pays"]
+    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "pays"]
     numerical_features = ["duree", "nominations", "prix", "annee_production"]
     X = data[categorical_features + numerical_features]
 
@@ -228,8 +312,34 @@ def prediction_vs_reel_page(request):
         # Calculer la différence entre les résultats réels et les prédictions
         data['difference'] = np.where(data['real_result'] == 0, "n'a pas été projeté", data['real_result'] - data['prediction'])
         
-        # Enregistrer les données dans un nouveau fichier CSV
-        data.to_csv(os.path.normpath(os.path.join(current_dir, 'prediction_VS_reel.csv')), index=False)
+        # Enregistrer les données dans la base de données Azure
+        cursor = cnxn.cursor()
+        for index, row in data.iterrows():
+            if row["real_result"] != 0:
+                cursor.execute("""
+                    MERGE INTO [dbo].[films] AS target
+                    USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))
+                    AS source (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine)
+                    ON target.titre = source.titre
+                    WHEN MATCHED THEN UPDATE SET 
+                        target.acteur_1 = source.acteur_1,
+                        target.acteur_2 = source.acteur_2,
+                        target.acteur_3 = source.acteur_3,
+                        target.realisateur = source.realisateur,
+                        target.distributeur = source.distributeur,
+                        target.duree = source.duree,
+                        target.genre = source.genre,
+                        target.pays = source.pays,
+                        target.nominations = source.nominations,
+                        target.prix = source.prix,
+                        target.annee_production = source.annee_production,
+                        target.Entrees_1ere_semaine = source.Entrees_1ere_semaine,
+                        target.sortie_france = ?
+                    WHEN NOT MATCHED THEN INSERT (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine, sortie_france)
+                    VALUES (source.titre, source.acteur_1, source.acteur_2, source.acteur_3, source.realisateur, source.distributeur, source.duree, source.genre, source.pays, source.nominations, source.prix, source.annee_production, source.Entrees_1ere_semaine, ?);
+                """, row["titre"], row["acteur_1"], row["acteur_2"], row["acteur_3"], row["realisateur"], row["distributeur"], row["duree"], row["genre"], row["pays"], row["nominations"], row["prix"], row["annee_production"], row["real_result"] * 2000, datetime.now().strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
+        cnxn.commit()
+        messages.success(request, 'Les informations ont bien été envoyées.')
 
     # Trier les données par ordre décroissant en fonction de la colonne "prediction"
     data = data.sort_values(by='prediction', ascending=False)

@@ -66,7 +66,7 @@ ROBOTSTXT_OBEY = False
 #    "senscritique_scrapy.pipelines.SenscritiqueScrapyPipeline": 300,
 #}
 ITEM_PIPELINES = {
-   'allocinéscraping.pipelines.SQLPipeline': 300,
+   'senscritique_scrapy.pipelines.SQLPipeline': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

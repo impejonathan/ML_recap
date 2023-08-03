@@ -3,11 +3,38 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 import subprocess
 import re
-import random
-
 import pandas as pd
 import numpy as np
+import pyodbc
+from dotenv import load_dotenv
+import os
+from datetime import datetime
+from datetime import datetime, timedelta
 
+
+# Définir la fonction pour supprimer les anciennes données
+def delete_previous_data():
+    # Charger les variables d'environnement à partir du fichier .env
+    load_dotenv()
+
+    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
+    server = os.environ['DB_SERVER']
+    database = os.environ['DB_DATABASE']
+    username = os.environ['DB_USERNAME']
+    password = os.environ['DB_PASSWORD']
+    driver = os.environ['DRIVER']
+
+    # Construire la chaîne de connexion à la base de données
+    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
+    # Créer un curseur pour exécuter des requêtes SQL
+    cursor = cnxn.cursor()
+
+    # Supprimer toutes les entrées de la table films_prediction
+    cursor.execute("DELETE FROM [dbo].[films_prediction]")
+
+    # Valider les changements dans la base de données
+    cnxn.commit()
 
 
 def clean_date(date_str):
@@ -50,12 +77,7 @@ def clean_date(date_str):
     month = month_dict.get(month.lower(), '00')  # Utiliser '00' si le mois n'est pas valide
     return f"{day}-{month}-{year}{year_str}"
 
-
-
-
-
 def convert_to_minutes(time: str) -> int or None:
-
     if time:
         # Remove any leading/trailing whitespace or newline characters
         time = time.strip()
@@ -94,7 +116,6 @@ class SenscritiqueSpider(CrawlSpider):
 
     user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/111.0'
     
-    
     def start_requests(self):
         for url in self.start_urls:
             yield scrapy.Request(url=url, headers={
@@ -113,11 +134,7 @@ class SenscritiqueSpider(CrawlSpider):
         item['acteur_2'] = acteurs[1].strip() if len(acteurs) >= 2 else None
         item['acteur_3'] = acteurs[2].strip() if len(acteurs) >= 3 else None
 
-
-
-
-        
-        item['réalisateur'] = response.css('span.light + span.blue-link::text').get()
+        item['realisateur'] = response.css('span.light + span.blue-link::text').get()
         
         item['distributeur'] = response.css('div.item span.that.blue-link::text').get()
         
@@ -138,8 +155,6 @@ class SenscritiqueSpider(CrawlSpider):
         else:
             item['pays'] = None
 
-
-
         # Utiliser la fonction pour extraire les récompenses et gérer les cas vides, 5 nominations ou 1 prix et 8 nominations
         recompenses = response.xpath('//span[@class="what light" and contains(text(), "Récompenses")]/following-sibling::span/text()').get()
         if recompenses:
@@ -158,15 +173,7 @@ class SenscritiqueSpider(CrawlSpider):
             item['nominations'] = 0
             item['prix'] = 0
                 
-            
-
-        # Nettoyer la description en supprimant les sauts de ligne et les espaces inutiles
-        description = response.xpath('//div[@class="content-txt "]//text()').get()
-        if description is not None:
-            item['description'] = description.replace('\n', '').strip()
-        else:
-            item['description'] = None
-
+                    
         item['date'] = response.css('span.date.blue-link::text').get()
         item['annee_production'] = response.xpath(
             '//span[@class="what light" and contains(text(), "Année de production")]/following-sibling::span[@class="that"]/text()').get()
@@ -175,10 +182,37 @@ class SenscritiqueSpider(CrawlSpider):
             # Utiliser la fonction clean_date pour nettoyer la date
         item['date'] = clean_date(item['date'])
         
+        # Charger les variables d'environnement à partir du fichier .env
+        load_dotenv()
+
+        # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
+        server = os.environ['DB_SERVER']
+        database = os.environ['DB_DATABASE']
+        username = os.environ['DB_USERNAME']
+        password = os.environ['DB_PASSWORD']
+        driver = os.environ['DRIVER']
+
+        # Construire la chaîne de connexion à la base de données
+        cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
+        # Créer un curseur pour exécuter des requêtes SQL
+        cursor = cnxn.cursor()
+
+        # Exemple d'insertion d'une ligne dans la table films_prediction
+        cursor.execute("""
+            INSERT INTO [dbo].[films_prediction] (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, date, annee_production)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, item["titre"], item["acteur_1"], item["acteur_2"], item["acteur_3"], item["realisateur"], item["distributeur"], item["duree"], item["genre"], item["pays"], item["nominations"], item["prix"], item["date"], item["annee_production"])
+
+        # Valider les changements dans la base de données
+        cnxn.commit()
         
-        return item
-
+# Fonction pour exécuter le web scraping
 def run_spider():
-    subprocess.run(["scrapy", "crawl", "allocine_sortie", "-O", "allocine_sortie.csv"])
+    subprocess.run(["scrapy", "crawl", "allocine_sortie"])
 
+# Appeler la fonction pour supprimer les anciennes données
+delete_previous_data()
+
+# Exécuter le web scraping
 run_spider()
