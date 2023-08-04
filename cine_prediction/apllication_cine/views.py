@@ -17,6 +17,15 @@ import subprocess
 from django.template.defaulttags import register
 import pyodbc
 from dotenv import load_dotenv
+from django.db import transaction  # Importez le module transaction
+
+@register.filter
+def mul(value, arg):
+    return value * arg
+
+@register.filter
+def div(value, arg):
+    return value / arg
 
 
 # Create your views here.
@@ -66,8 +75,6 @@ def signup_page(request):
 
 
 
-# # @login_required(login_url='login')
-
 def prediction_page(request):
     # Charger les variables d'environnement à partir du fichier .env
     load_dotenv()
@@ -98,51 +105,30 @@ def prediction_page(request):
     numerical_features = ["duree", "nominations", "prix", "annee_production"]
     X = data[categorical_features + numerical_features]
 
-    # Faire la prédiction
-    predictions = model.predict(X)
+    # Initialiser is_data_empty avec True
+    is_data_empty = True
 
-    # Ajouter les prédictions aux données
-    data['prediction'] = np.floor(predictions / 2000).astype(int)
-    data = data.sort_values(by='prediction', ascending=False)
+    if not data.empty:
+        is_data_empty = False
+
+        # Faire la prédiction
+        predictions = model.predict(X)
+
+        # Ajouter les prédictions aux données
+        data['prediction'] = np.floor(predictions / 2000).astype(int)
+        
+        # Convertir la colonne de date en objets datetime (remplacez 'date' par le nom correct)
+        data['date'] = pd.to_datetime(data['date'], format='%d-%m-%Y')
+
+        # Tri personnalisé : d'abord par date (plus récente d'abord), puis par prédiction
+        data = data.sort_values(by=['date', 'prediction'], ascending=[False, False])
+        
+        # Convertir la colonne de date à nouveau au format original
+        data['date'] = data['date'].dt.strftime('%d-%m-%Y')
+
 
     # Transmettre les données au template pour les afficher
-    return render(request, 'apllication_cine/prediction.html', context={'data': data})
-
-
-
-# def prediction_page(request):
-#     # Récupérer le répertoire du fichier views.py (chemin relatif)
-#     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-#     # Construire le chemin complet vers le fichier CSV en utilisant le chemin relatif
-#     csv_path = os.path.normpath(os.path.join(current_dir, 'senscritique_scrapy/senscritique_scrapy/spiders/allocine_sortie.csv'))
-
-#     # Charger les données du CSV en utilisant pandas
-#     data = pd.read_csv(csv_path)
-
-#     # Charger le modèle pickles
-#     model_path = os.path.normpath(os.path.join(current_dir, 'test_cine.pkl'))
-#     with open(model_path, 'rb') as f:
-#         model = pickle.load(f)
-
-#     # Préparer les données pour la prédiction
-#     categorical_features = ["acteur_1", "acteur_2", "acteur_3", "réalisateur", "distributeur", "genre", "pays"]
-#     numerical_features = ["duree", "nominations", "prix", "annee_production"]
-#     X = data[categorical_features + numerical_features]
-
-#     # Faire la prédiction
-#     predictions = model.predict(X)
-
-#     # Ajouter les prédictions aux données
-#     data['prediction'] = np.floor(predictions / 2000).astype(int)
-#     data = data.sort_values(by='prediction', ascending=False)
-
-
-#     # Transmettre les données au template pour les afficher
-#     return render(request, 'apllication_cine/prediction.html', context={'data': data})
-
-
-
+    return render(request, 'apllication_cine/prediction.html', context={'data': data, 'is_data_empty': is_data_empty})
 
 
 
@@ -159,18 +145,7 @@ def scraping_view(request):
         return HttpResponseRedirect(reverse('prediction'))
 
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
- 
-    
-    
+
     
     
 # @login_required(login_url='login')   
@@ -233,6 +208,13 @@ def bot(request):
 
     jours_organises['lundi'] = [[film[0], int(film[1] * 0.50)] for film in sorted(basse_prediction, key=lambda x: x[1], reverse=True)]
     jours_organises['jeudi'] = [[film[0], int(film[1] * 0.50)] for film in sorted(basse_prediction, key=lambda x: x[1], reverse=True)]
+    
+    for jour, films in jours_organises.items():
+        for film in films:
+            prediction = film[1]
+            salle_capacity = salle_capacities[films.index(film)]
+            taux_remplissage = (prediction * 100) / salle_capacity
+            film.append(taux_remplissage)
     
     return render(request, 'apllication_cine/bot.html', context={'jours_organises': jours_organises, 'salle_capacities': salle_capacities})
 
@@ -305,40 +287,42 @@ def prediction_vs_reel_page(request):
     if request.method == 'POST':
         # Récupérer les résultats réels saisis par l'utilisateur
         real_results = [int(request.POST.get(f"real_result_{index}")) for index in range(len(data))]
-        
+
         # Ajouter les résultats réels aux données
         data['real_result'] = real_results
-        
+
         # Calculer la différence entre les résultats réels et les prédictions
         data['difference'] = np.where(data['real_result'] == 0, "n'a pas été projeté", data['real_result'] - data['prediction'])
-        
+
         # Enregistrer les données dans la base de données Azure
         cursor = cnxn.cursor()
-        for index, row in data.iterrows():
-            if row["real_result"] != 0:
-                cursor.execute("""
-                    MERGE INTO [dbo].[films] AS target
-                    USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))
-                    AS source (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine)
-                    ON target.titre = source.titre
-                    WHEN MATCHED THEN UPDATE SET 
-                        target.acteur_1 = source.acteur_1,
-                        target.acteur_2 = source.acteur_2,
-                        target.acteur_3 = source.acteur_3,
-                        target.realisateur = source.realisateur,
-                        target.distributeur = source.distributeur,
-                        target.duree = source.duree,
-                        target.genre = source.genre,
-                        target.pays = source.pays,
-                        target.nominations = source.nominations,
-                        target.prix = source.prix,
-                        target.annee_production = source.annee_production,
-                        target.Entrees_1ere_semaine = source.Entrees_1ere_semaine,
-                        target.sortie_france = ?
-                    WHEN NOT MATCHED THEN INSERT (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine, sortie_france)
-                    VALUES (source.titre, source.acteur_1, source.acteur_2, source.acteur_3, source.realisateur, source.distributeur, source.duree, source.genre, source.pays, source.nominations, source.prix, source.annee_production, source.Entrees_1ere_semaine, ?);
-                """, row["titre"], row["acteur_1"], row["acteur_2"], row["acteur_3"], row["realisateur"], row["distributeur"], row["duree"], row["genre"], row["pays"], row["nominations"], row["prix"], row["annee_production"], row["real_result"] * 2000, datetime.now().strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
-        cnxn.commit()
+        with transaction.atomic():
+            for index, row in data.iterrows():
+                if row["real_result"] != 0:
+                    cursor.execute("""
+                        MERGE INTO [dbo].[films] AS target
+                        USING (VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?))
+                        AS source (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine)
+                        ON target.titre = source.titre
+                        WHEN MATCHED THEN UPDATE SET 
+                            target.acteur_1 = source.acteur_1,
+                            target.acteur_2 = source.acteur_2,
+                            target.acteur_3 = source.acteur_3,
+                            target.realisateur = source.realisateur,
+                            target.distributeur = source.distributeur,
+                            target.duree = source.duree,
+                            target.genre = source.genre,
+                            target.pays = source.pays,
+                            target.nominations = source.nominations,
+                            target.prix = source.prix,
+                            target.annee_production = source.annee_production,
+                            target.Entrees_1ere_semaine = source.Entrees_1ere_semaine,
+                            target.sortie_france = ?
+                        WHEN NOT MATCHED THEN INSERT (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine, sortie_france)
+                        VALUES (source.titre, source.acteur_1, source.acteur_2, source.acteur_3, source.realisateur, source.distributeur, source.duree, source.genre, source.pays, source.nominations, source.prix, source.annee_production, source.Entrees_1ere_semaine, ?);
+                    """, row["titre"], row["acteur_1"], row["acteur_2"], row["acteur_3"], row["realisateur"], row["distributeur"], row["duree"], row["genre"], row["pays"], row["nominations"], row["prix"], row["annee_production"], row["real_result"] * 2000, datetime.now().strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
+                    cursor.execute("DELETE FROM [dbo].[films_prediction] WHERE titre = ?", row["titre"])
+            cnxn.commit()
         messages.success(request, 'Les informations ont bien été envoyées.')
 
     # Trier les données par ordre décroissant en fonction de la colonne "prediction"

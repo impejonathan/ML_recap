@@ -11,30 +11,16 @@ import os
 from datetime import datetime
 from datetime import datetime, timedelta
 
-
-# Définir la fonction pour supprimer les anciennes données
-def delete_previous_data():
-    # Charger les variables d'environnement à partir du fichier .env
-    load_dotenv()
-
-    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
-    server = os.environ['DB_SERVER']
-    database = os.environ['DB_DATABASE']
-    username = os.environ['DB_USERNAME']
-    password = os.environ['DB_PASSWORD']
-    driver = os.environ['DRIVER']
-
-    # Construire la chaîne de connexion à la base de données
-    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
-
-    # Créer un curseur pour exécuter des requêtes SQL
-    cursor = cnxn.cursor()
-
-    # Supprimer toutes les entrées de la table films_prediction
-    cursor.execute("DELETE FROM [dbo].[films_prediction]")
-
-    # Valider les changements dans la base de données
-    cnxn.commit()
+def remove_duplicates(cursor):
+    cursor.execute("""
+        DELETE FROM [dbo].[films_prediction]
+        WHERE [titre] IN (
+            SELECT [titre]
+            FROM [dbo].[films_prediction]
+            GROUP BY [titre]
+            HAVING COUNT(*) > 1
+        )
+    """)
 
 
 def clean_date(date_str):
@@ -197,6 +183,9 @@ class SenscritiqueSpider(CrawlSpider):
 
         # Créer un curseur pour exécuter des requêtes SQL
         cursor = cnxn.cursor()
+        
+        remove_duplicates(cursor)
+
 
         # Exemple d'insertion d'une ligne dans la table films_prediction
         cursor.execute("""
@@ -204,6 +193,9 @@ class SenscritiqueSpider(CrawlSpider):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, item["titre"], item["acteur_1"], item["acteur_2"], item["acteur_3"], item["realisateur"], item["distributeur"], item["duree"], item["genre"], item["pays"], item["nominations"], item["prix"], item["date"], item["annee_production"])
 
+        
+        
+        
         # Valider les changements dans la base de données
         cnxn.commit()
         
@@ -211,8 +203,5 @@ class SenscritiqueSpider(CrawlSpider):
 def run_spider():
     subprocess.run(["scrapy", "crawl", "allocine_sortie"])
 
-# Appeler la fonction pour supprimer les anciennes données
-delete_previous_data()
 
-# Exécuter le web scraping
 run_spider()

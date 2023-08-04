@@ -2,17 +2,25 @@
 
 {% block content %}
 <div class="container m-3 mx-auto">
-    <h1 class="mt-4 mb-4">Optimisation des recettes pour les salles de cinéma</h1>
-    <div class="row">
+    <h1 class="mt-4 mb-4 text-center text-warning">Repatition  des recettes pour les salles de cinéma</h1>
+    <div class="row border border-dark bg-white">
         {% for jour, films in jours_organises.items %}
-        <div class="col-lg-3 col-md-6 mb-4">
-            <h3>{{ jour|title }}</h3>
-            {% for film, prediction in films %}
+        <div class="col-lg-3 col-md-6">
+            <h3 class="text-center">{{ jour|title }}</h3>
+            {% for film in films %}
+            {% with salle_capacity=salle_capacities|get_item:forloop.counter0 %}
             <p>
-                <strong>Salle {{ forloop.counter }} :</strong> {{ salle_capacities|get_item:forloop.counter0 }} personnes<br>
-                <strong>Prédiction :</strong> {{ prediction }} pour la semaines<br>
-                <strong>Titre :</strong> {{ film }}
-            </p>
+                <strong>Salle {{ forloop.counter }} :</strong> {{ salle_capacity }} personnes<br>
+                <strong>Prédiction :</strong> {{ film.1 }} pour la semaine<br>
+                <strong>Titre :</strong> {{ film.0 }}<br>
+                <strong>Taux de remplissage :</strong><br> <br>
+                {% if film.2 > 19.99 %}
+                <span class="alert alert-success">{{ film.2|floatformat:"2" }}%</span> <br>
+                {% else %}
+                <span class="alert alert-danger">{{ film.2|floatformat:"2" }}%</span> <br>
+                {% endif %}
+            </p> <br>
+            {% endwith %}
             {% endfor %}
         </div>
         {% endfor %}

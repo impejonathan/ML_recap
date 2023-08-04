@@ -1,6 +1,6 @@
 /* Définir l'image de fond */
 body {
-    background-image: url(img/.jpg);
+    background-image: url(img/cine_vide.avif);
     background-size: cover; /* Ajuster la taille de l'image pour remplir l'arrière-plan */
   }
   
