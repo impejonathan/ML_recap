@@ -16,7 +16,8 @@ class MoviesSpider(scrapy.Spider):
             title = movie.css('::text').get().strip()
 
             # Extracting video link
-            video_link = movie.css('a.thumbnail-container.thumbnail-link::attr(href)').get()
+            video_link = movie.xpath('.//a[contains(concat(" ", @class, " "), " thumbnail-container ") and contains(concat(" ", @class, " "), " thumbnail-link ")]/@href').get()
+
             # video_link = movie.xpath('.//a[contains(@class, "thumbnail-container thumbnail-link")]/@href').get()
             if video_link:
                 yield scrapy.Request(video_link, callback=self.parse_movie_page, meta={'title': title})
