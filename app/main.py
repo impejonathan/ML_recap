@@ -39,8 +39,14 @@ class PredictionOut(BaseModel):
     
 
 
-# Construction du chemin absolu vers le modèle
-model_path = os.path.join(os.path.dirname(__file__), '../model/catboost.pkl')
+# # Construction du chemin absolu vers le modèle
+# model_path = os.path.join(os.path.dirname(__file__), '../model/catboost.pkl')
+
+# # Chargement du modèle depuis le fichier
+# model = joblib.load(model_path)
+
+# Construction du chemin absolu vers le modèle (à l'intérieur de l'image Docker)
+model_path = '/app/catboost.pkl'
 
 # Chargement du modèle depuis le fichier
 model = joblib.load(model_path)

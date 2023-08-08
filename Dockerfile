@@ -1,7 +1,13 @@
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
 
-COPY ./requirements.txt /app/requirements.txt
+# Copier le modèle catboost.pkl dans l'image
+# COPY model/catboost.pkl /app/catboost.pkl
 
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+# Copier les fichiers de dépendances et le code de l'application
 
-COPY ./app /app/app 
+COPY ./app /app/
+# COPY ./requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+
+
+
