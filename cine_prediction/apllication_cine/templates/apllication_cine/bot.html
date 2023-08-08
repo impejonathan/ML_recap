@@ -2,7 +2,12 @@
 
 {% block content %}
 <div class="container m-3 mx-auto">
-    <h1 class="mt-4 mb-4 text-center text-warning">Repatition  des recettes pour les salles de cinéma</h1>
+    <h1 class="mt-4 mb-4 text-center text-warning">Repatition des recettes pour les salles de cinéma</h1>
+    {% if is_data_empty %}
+    <div class="alert alert-warning text-center">
+        Aucune donnée trouvée dans la base de données.
+    </div>
+    {% else %}
     <div class="row border border-dark bg-white">
         {% for jour, films in jours_organises.items %}
         <div class="col-lg-3 col-md-6">
@@ -11,7 +16,7 @@
             {% with salle_capacity=salle_capacities|get_item:forloop.counter0 %}
             <p>
                 <strong>Salle {{ forloop.counter }} :</strong> {{ salle_capacity }} personnes<br>
-                <strong>Prédiction :</strong> {{ film.1 }} pour la semaine<br>
+                <strong>Prédiction :</strong> {{ film.1 }} pour la salle<br>
                 <strong>Titre :</strong> {{ film.0 }}<br>
                 <strong>Taux de remplissage :</strong><br> <br>
                 {% if film.2 > 19.99 %}
@@ -25,5 +30,6 @@
         </div>
         {% endfor %}
     </div>
+    {% endif %}
 </div>
 {% endblock content %}

@@ -27,32 +27,44 @@
                 </button>
                 <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                     <ul class="navbar-nav">
+                        {% if user.is_authenticated %}
 
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'login' %}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'signup' %}">Signup</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'prediction' %}">Prediction</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'bot' %}"> agenda des salle </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'prediction_VS_reel' %}">Envoi des chiffres </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'prediction' %}">Prediction</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'bot' %}"> agenda des salle </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'prediction_VS_reel' %}">Envoi des chiffres </a>
+                            </li>
+    
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'video' %}">video </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'logout' %}">Déconnexion</a>
+                            </li>
+
+                            
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'login' %}">Connexion</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'signup' %}">S'enregistrer </a>
+                            </li>
+                        {% endif %}
                     </ul>
-
-
+    
+    
                 </div>
             </div>
         </nav> 
-   </header>
+    </header>
+    
+    
 
 
 {% block content %}

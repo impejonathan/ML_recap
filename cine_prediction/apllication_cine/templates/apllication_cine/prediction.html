@@ -24,11 +24,13 @@
         <table class="table table-striped table-bordered">
             <thead class="table-dark">
                 <tr>
-                    <th>Prédiction </th>
+                    <th>estimation pour la salle </th>
+                    <th>estimation national </th>
+
                     <th>Titre</th>
-                    <th>Acteur 1</th>
-                    <th>Acteur 2</th>
-                    <th>Acteur 3</th>
+                    <th>Acteur </th>
+                    <th>Acteur </th>
+                    <th>Acteur </th>
                     {% comment %} <th>Réalisateur</th> {% endcomment %}
                     {% comment %} <th>Distributeur</th> {% endcomment %}
                     <th>Durée</th>
@@ -44,6 +46,7 @@
                 {% for index, row in data.iterrows %}
                 <tr>
                     <td class="fw-bold">{{ row.prediction }}</td>
+                    <td class="fw-bold">{{ row.prediction_national }}</td>
                     <td>{{ row.titre }}</td>
                     <td>{{ row.acteur_1 }}</td>
                     <td>{{ row.acteur_2 }}</td>
@@ -61,6 +64,19 @@
                 {% endfor %}
             </tbody>
         </table>
+        <br><br>
+        {% if not is_data_empty %}
+<div class="text-center">
+    <form action="{% url 'delete_data' %}" method="post">
+        {% csrf_token %}
+        <img src="{% static 'img/chaos.png' %}" alt="Logo" width="75" height="75" class="d-inline-block align-top me-2">
+        <input type="submit" class="btn btn-danger mt-3" value="Effacer les données">
+        <img src="{% static 'img/chaos.png' %}" alt="Logo" width="75" height="75" class="d-inline-block align-top me-2">
+
+    </form>
+</div><br><br>
+{% endif %}
+
     </div>
     {% endif %}
 </div>

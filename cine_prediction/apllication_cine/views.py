@@ -34,6 +34,18 @@ def div(value, arg):
 def index(request):
     return render(request, 
                   'apllication_cine/index.html',
+                 )
+
+
+from django.shortcuts import render
+
+def handler404(request, exception):
+    return render(request, 'apllication_cine/404.html', status=404)
+
+    
+def video(request):
+    return render(request, 
+                  'apllication_cine/video.html',
                   )
     
 def logout_user(request):
@@ -55,7 +67,7 @@ def login_page(request):
             )
             if user is not None:
                 login(request, user)
-                return redirect('home')
+                return redirect('prediction')
         message = 'Identifiants invalides.'
     return render(request, 'apllication_cine/login.html', context={'form': form, 'message': message})
 
@@ -68,10 +80,27 @@ def signup_page(request):
             user = form.save()
             # auto-login user
             login(request, user)
-            return redirect(settings.LOGIN_REDIRECT_URL)
+            return redirect('prediction')
     return render(request, 'apllication_cine/signup.html', context={'form': form})
 
 
+def delete_data(request):
+    load_dotenv()
+
+    server = os.environ['DB_SERVER']
+    database = os.environ['DB_DATABASE']
+    username = os.environ['DB_USERNAME']
+    password = os.environ['DB_PASSWORD']
+    driver = os.environ['DRIVER']
+
+    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+
+    cursor = cnxn.cursor()
+    cursor.execute("DELETE FROM [dbo].[films_prediction]")
+    cnxn.commit()
+    cursor.close()
+    
+    return HttpResponseRedirect(reverse('prediction'))
 
 
 
@@ -96,13 +125,13 @@ def prediction_page(request):
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'test_model_jo.pkl'))
+    model_path = os.path.normpath(os.path.join(current_dir, 'catboost.pkl'))
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
     # Préparer les données pour la prédiction
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "pays"]
-    numerical_features = ["duree", "nominations", "prix", "annee_production"]
+    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "genre1" ,"pays", "langue",'vacances', 'saison', 'type','reputation_distributeur', 'nombre_films_distributeur']
+    numerical_features = ["duree", "nominations", "prix", "annee_production", 'actor_1_popularity', 'actor_2_popularity', 'actor_3_popularity', 'director_popularity', 'budget']
     X = data[categorical_features + numerical_features]
 
     # Initialiser is_data_empty avec True
@@ -116,6 +145,8 @@ def prediction_page(request):
 
         # Ajouter les prédictions aux données
         data['prediction'] = np.floor(predictions / 2000).astype(int)
+        
+        data['prediction_national'] = [int(round(x, 0)) for x in predictions]
         
         # Convertir la colonne de date en objets datetime (remplacez 'date' par le nom correct)
         data['date'] = pd.to_datetime(data['date'], format='%d-%m-%Y')
@@ -144,6 +175,7 @@ def scraping_view(request):
         # Rediriger l'utilisateur vers la page de prédiction
         return HttpResponseRedirect(reverse('prediction'))
 
+
     
 
     
@@ -166,17 +198,21 @@ def bot(request):
     # Exécuter une requête SQL pour récupérer les données de la table films_prediction
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
+    # Vérifier si les données sont vides
+    if data.empty:
+        return render(request, 'apllication_cine/bot.html', context={'is_data_empty': True})
+
     # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'test_model_jo.pkl'))
+    model_path = os.path.normpath(os.path.join(current_dir, 'catboost.pkl'))
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
     # Préparer les données pour la prédiction
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "pays"]
-    numerical_features = ["duree", "nominations", "prix", "annee_production"]
+    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "genre1" ,"pays", "langue",'vacances', 'saison', 'type','reputation_distributeur', 'nombre_films_distributeur']
+    numerical_features = ["duree", "nominations", "prix", "annee_production", 'actor_1_popularity', 'actor_2_popularity', 'actor_3_popularity', 'director_popularity', 'budget']
     X = data[categorical_features + numerical_features]
 
     # Faire la prédiction
@@ -217,6 +253,7 @@ def bot(request):
             film.append(taux_remplissage)
     
     return render(request, 'apllication_cine/bot.html', context={'jours_organises': jours_organises, 'salle_capacities': salle_capacities})
+
 
     
 @register.filter
@@ -265,17 +302,22 @@ def prediction_vs_reel_page(request):
     # Exécuter une requête SQL pour récupérer les données de la table films_prediction
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
+    # Vérifier si les données sont vides
+    if data.empty:
+        messages.warning(request, 'Aucune donnée trouvée dans la base de données.')
+        return render(request, 'apllication_cine/prediction_VS_reel.html', context={'is_data_empty': True})
+
     # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'test_model_jo.pkl'))
+    model_path = os.path.normpath(os.path.join(current_dir, 'catboost.pkl'))
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
 
     # Préparer les données pour la prédiction
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "pays"]
-    numerical_features = ["duree", "nominations", "prix", "annee_production"]
+    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "genre1" ,"pays", "langue",'vacances', 'saison', 'type','reputation_distributeur', 'nombre_films_distributeur']
+    numerical_features = ["duree", "nominations", "prix", "annee_production", 'actor_1_popularity', 'actor_2_popularity', 'actor_3_popularity', 'director_popularity', 'budget']
     X = data[categorical_features + numerical_features]
 
     # Faire la prédiction
