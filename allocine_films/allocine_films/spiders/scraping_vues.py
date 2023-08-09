@@ -137,25 +137,18 @@ class MoviesSpider(scrapy.Spider):
     def start_requests(self):
         base_url = 'https://www.allocine.fr/films/?page={}'
         # Loop to iterate through pages from 1 to 2 (for testing)
-        for page_number in range(1, 2):
+        for page_number in range(1, 7800):
             url = base_url.format(page_number)
             yield scrapy.Request(url, self.parse)
     
-    
     def parse(self, response):
-        for movie in response.css('a.meta-title-link'):
-            title = movie.css('::text').get().strip()
-            link = response.urljoin(movie.attrib['href'])  # Corrected URL
-            yield scrapy.Request(link, callback=self.parse_link, meta={'title': title})
-
-    def parse_link(self, response):
         for video_link in response.css('a.thumbnail-container.thumbnail-link::attr(href)').getall():
             if not video_link.startswith('http'):
                 video_link = response.urljoin(video_link)
             yield scrapy.Request(video_link, callback=self.parse_video_page)
 
     def parse_video_page(self, response):
-        title = response.meta['title']
+        title = response.css('div.media-info-title::text').get()
 
         # Extracting views
         views_text = response.css('div.media-info-item.icon.icon-eye::text').get()
@@ -165,8 +158,8 @@ class MoviesSpider(scrapy.Spider):
             views = 'N/A'
         
         yield {
-            'Titre': title,
-            'Vues': views,
+            'titre_ba': title,
+            'vues': views,
         }
 
 
