@@ -219,8 +219,7 @@ class SenscritiqueSpider(CrawlSpider):
                     budget = movie_data.get('budget')
                     return budget
         return None
-
-     
+    
     def get_second_genre(self, movie_title):
         url = f'https://api.themoviedb.org/3/search/movie?api_key={self.api_key}&query={movie_title}'
         response = requests.get(url)
@@ -241,7 +240,7 @@ class SenscritiqueSpider(CrawlSpider):
                         return genres[0]['name']
         return None
 
-    
+
     
     def start_requests(self):
         for url in self.start_urls:
@@ -274,9 +273,8 @@ class SenscritiqueSpider(CrawlSpider):
         genres = response.css('div.meta-body-item.meta-body-info span::text').getall()
         item['genre'] = genres[3].split(',')[0].strip() if len(genres) >= 4 else None
         
-                # Récupérer le deuxième genre du film
-        item['genre1'] = self.get_second_genre(item['titre'])
-
+        second_genre = self.get_second_genre(item['titre'])
+        item['genre1'] = second_genre if second_genre is not None else "inconnue"
     
         
         # Utiliser la boucle pour extraire les nationalités
@@ -325,11 +323,14 @@ class SenscritiqueSpider(CrawlSpider):
         
         
         # Récupérer la langue du film
-        item['langue'] = self.get_movie_language(item['titre'])
+        movie_language = self.get_movie_language(item['titre'])
+        item['langue'] = movie_language if movie_language is not None else "xx"
+
         
-                # Récupérer le budget du film
-        item['budget'] = self.get_movie_budget(item['titre'])
-        
+        # Récupérer le budget du film à partir de l'API TMDB
+        item['budget'] = round(np.log1p(self.get_movie_budget(item['titre'])), 6)
+        item['budget'] = int(np.exp(item['budget']) - 1)
+
         
             # Utiliser la fonction clean_date pour nettoyer la date
         item['date'] = clean_date(item['date'])
@@ -342,6 +343,12 @@ class SenscritiqueSpider(CrawlSpider):
         
         item['reputation_distributeur'] = round(np.log1p(df.loc[df['distributeur'] == item['distributeur'], 'reputation_distributeur'].iloc[0]), 6)
         item['nombre_films_distributeur'] = round(np.log1p(df.loc[df['distributeur'] == item['distributeur'], 'nombre_films_distributeur'].iloc[0]), 6)
+        item['reputation_distributeur'] = int(np.exp(item['reputation_distributeur']) - 1)
+        item['nombre_films_distributeur'] = int(np.exp(item['nombre_films_distributeur']) - 1)
+        
+        item['type'] = response.xpath(
+            '//span[@class="what light" and contains(text(), "Type de film")]/following-sibling::span[@class="that"]/text()').get()
+
 
         
         # Charger les variables d'environnement à partir du fichier .env
@@ -365,9 +372,9 @@ class SenscritiqueSpider(CrawlSpider):
 
         # Exemple d'insertion d'une ligne dans la table films_prediction
         cursor.execute("""
-            INSERT INTO [dbo].[films_prediction] (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, date, annee_production,vacances,saison,reputation_distributeur,nombre_films_distributeur,actor_1_popularity,actor_2_popularity,actor_3_popularity,director_popularity)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, item["titre"], item["acteur_1"], item["acteur_2"], item["acteur_3"], item["realisateur"], item["distributeur"], item["duree"], item["genre"], item["pays"], item["nominations"], item["prix"], item["date"], item["annee_production"],item['vacances'] , item['saison'] ,item['reputation_distributeur'],item['nombre_films_distributeur'], item['actor_1_popularity'],item['actor_2_popularity'], item['actor_3_popularity'], item['director_popularity'])
+            INSERT INTO [dbo].[films_prediction] (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, date, annee_production,vacances,saison,reputation_distributeur,nombre_films_distributeur,actor_1_popularity,actor_2_popularity,actor_3_popularity,director_popularity,type,budget,langue,genre1)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, item["titre"], item["acteur_1"], item["acteur_2"], item["acteur_3"], item["realisateur"], item["distributeur"], item["duree"], item["genre"], item["pays"], item["nominations"], item["prix"], item["date"], item["annee_production"],item['vacances'] , item['saison'] ,item['reputation_distributeur'],item['nombre_films_distributeur'], item['actor_1_popularity'],item['actor_2_popularity'], item['actor_3_popularity'], item['director_popularity'],item['type'], item['budget'],item['langue'],item['genre1']  )
 
         
         

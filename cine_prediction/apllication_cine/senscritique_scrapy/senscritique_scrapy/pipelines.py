@@ -70,9 +70,9 @@ class SQLPipeline:
             dict: L'objet item d'origine qui sera transmis aux autres pipelines (s'il en existe).
         """
         self.cursor.execute(
-        'INSERT INTO [dbo].[films_prediction] (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, date, annee_production,vacances,saison,reputation_distributeur,nombre_films_distributeur,actor_1_popularity,actor_2_popularity,actor_3_popularity,director_popularity) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        (item["titre"], item["acteur_1"], item["acteur_2"], item["acteur_3"], item["realisateur"], item["distributeur"], item["duree"], item["genre"], item["pays"], item["nominations"], item["prix"], item["date"], item["annee_production"],item['vacances'] , item['saison'] ,item['reputation_distributeur'],item['nombre_films_distributeur'], item['actor_1_popularity'],item['actor_2_popularity'], item['actor_3_popularity'], item['director_popularity']))
+        'INSERT INTO [dbo].[films_prediction] (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, date, annee_production,vacances,saison,reputation_distributeur,nombre_films_distributeur,actor_1_popularity,actor_2_popularity,actor_3_popularity,director_popularity,type,budget,langue,genre1) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (item["titre"], item["acteur_1"], item["acteur_2"], item["acteur_3"], item["realisateur"], item["distributeur"], item["duree"], item["genre"], item["pays"], item["nominations"], item["prix"], item["date"], item["annee_production"],item['vacances'] , item['saison'] ,item['reputation_distributeur'],item['nombre_films_distributeur'], item['actor_1_popularity'],item['actor_2_popularity'], item['actor_3_popularity'], item['director_popularity'],item['type'],item['budget'],item['langue'],item['genre1']))
         self.conn.commit()
 
         return item

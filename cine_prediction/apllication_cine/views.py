@@ -18,6 +18,10 @@ from django.template.defaulttags import register
 import pyodbc
 from dotenv import load_dotenv
 from django.db import transaction  # Importez le module transaction
+import requests
+import json
+
+
 
 @register.filter
 def mul(value, arg):
@@ -105,60 +109,89 @@ def delete_data(request):
 
 
 def prediction_page(request):
-    # Charger les variables d'environnement à partir du fichier .env
     load_dotenv()
 
-    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
     server = os.environ['DB_SERVER']
     database = os.environ['DB_DATABASE']
     username = os.environ['DB_USERNAME']
     password = os.environ['DB_PASSWORD']
     driver = os.environ['DRIVER']
 
-    # Construire la chaîne de connexion à la base de données
-    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+    cnxn = pyodbc.connect('DRIVER=' + driver + ';SERVER=' + server + ';PORT=1433;DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
 
-    # Exécuter une requête SQL pour récupérer les données de la table films_prediction
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
-    # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'catboost.pkl'))
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
+    categorical_features = ['vacances','saison','pays','annee_production','type','genre','genre1','langue']
 
-    # Préparer les données pour la prédiction
-    categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "genre1" ,"pays", "langue",'vacances', 'saison', 'type','reputation_distributeur', 'nombre_films_distributeur']
-    numerical_features = ["duree", "nominations", "prix", "annee_production", 'actor_1_popularity', 'actor_2_popularity', 'actor_3_popularity', 'director_popularity', 'budget']
-    X = data[categorical_features + numerical_features]
+    numeric_features = ['actor_1_popularity', 'actor_2_popularity',
+        'actor_3_popularity','duree', 'director_popularity',  'nombre_films_distributeur', 'budget','reputation_distributeur']
+    X = data[categorical_features + numeric_features]
+    
+    # print(X)
 
-    # Initialiser is_data_empty avec True
     is_data_empty = True
 
     if not data.empty:
         is_data_empty = False
 
-        # Faire la prédiction
-        predictions = model.predict(X)
+        # Convertir les données du champ 'vacances' en booléen
+        data['vacances'] = data['vacances'].astype(bool)
 
-        # Ajouter les prédictions aux données
-        data['prediction'] = np.floor(predictions / 2000).astype(int)
+        input_data = []
+        for index, row in X.iterrows():
+            input_data.append({
+                "duree": row['duree'],
+                "genre": row['genre'],
+                "pays": row['pays'],
+                "type": row['type'],
+                "annee_production": row['annee_production'],
+                "actor_1_popularity": row['actor_1_popularity'],
+                "actor_2_popularity": row['actor_2_popularity'],
+                "actor_3_popularity": row['actor_3_popularity'],
+                "director_popularity": row['director_popularity'],
+                "vacances": row['vacances'],  # Les données ont été converties en booléen
+                "saison": row['saison'],
+                "langue": row['langue'],
+                "budget": row['budget'],
+                "genre1": row['genre1'],
+                "reputation_distributeur": row['reputation_distributeur'],
+                "nombre_films_distributeur": row['nombre_films_distributeur']
+            })
+
+        # Imprimer les données d'entrée envoyées à l'API
+        # print("Input data sent to API:")
+        # print(input_data)
         
-        data['prediction_national'] = [int(round(x, 0)) for x in predictions]
         
-        # Convertir la colonne de date en objets datetime (remplacez 'date' par le nom correct)
+
+        api_url = "http://fastapimodel.f0bae8f6bpfbazhu.francecentral.azurecontainer.io/predict/"
+        response_data = []
+        for elt in input_data:
+            response = requests.post(api_url, json = elt)
+            
+            
+            #print(response.status_code)
+            
+            
+            #if response.status_code == 200:
+            response_data.append( response.json() ) # Store the response data
+
+        # Imprimer la réponse de l'API
+        # print("Response from API:")
+        # print(response.json())
+
+        predictions = response_data
+        # print("aaaaaaaaaaaaaaaa",predictions)
+
+        data_loc = pd.DataFrame(predictions)
+        data["prediction"] = data_loc['prediction'].apply(lambda x: round(x / 2000)).astype(int)
+        data['prediction_national'] = data_loc['prediction']
         data['date'] = pd.to_datetime(data['date'], format='%d-%m-%Y')
-
-        # Tri personnalisé : d'abord par date (plus récente d'abord), puis par prédiction
         data = data.sort_values(by=['date', 'prediction'], ascending=[False, False])
-        
-        # Convertir la colonne de date à nouveau au format original
         data['date'] = data['date'].dt.strftime('%d-%m-%Y')
 
-
-    # Transmettre les données au template pour les afficher
     return render(request, 'apllication_cine/prediction.html', context={'data': data, 'is_data_empty': is_data_empty})
 
 
@@ -180,61 +213,72 @@ def scraping_view(request):
 
     
     
-# @login_required(login_url='login')   
 def bot(request):
-    # Charger les variables d'environnement à partir du fichier .env
     load_dotenv()
 
-    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
     server = os.environ['DB_SERVER']
     database = os.environ['DB_DATABASE']
     username = os.environ['DB_USERNAME']
     password = os.environ['DB_PASSWORD']
     driver = os.environ['DRIVER']
 
-    # Construire la chaîne de connexion à la base de données
     cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
-    # Exécuter une requête SQL pour récupérer les données de la table films_prediction
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
-    # Vérifier si les données sont vides
     if data.empty:
         return render(request, 'apllication_cine/bot.html', context={'is_data_empty': True})
 
-    # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'catboost.pkl'))
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
-
-    # Préparer les données pour la prédiction
     categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "genre1" ,"pays", "langue",'vacances', 'saison', 'type','reputation_distributeur', 'nombre_films_distributeur']
     numerical_features = ["duree", "nominations", "prix", "annee_production", 'actor_1_popularity', 'actor_2_popularity', 'actor_3_popularity', 'director_popularity', 'budget']
     X = data[categorical_features + numerical_features]
 
-    # Faire la prédiction
-    predictions = model.predict(X)
-    data['prediction'] = np.floor(predictions / 2000).astype(int)
+    # Convertir les données en un format compatible avec l'API
+    input_data = []
+    for index, row in X.iterrows():
+        input_data.append({
+            "duree": row['duree'],
+            "genre": row['genre'],
+            "pays": row['pays'],
+            "type": row['type'],
+            "annee_production": row['annee_production'],
+            "actor_1_popularity": row['actor_1_popularity'],
+            "actor_2_popularity": row['actor_2_popularity'],
+            "actor_3_popularity": row['actor_3_popularity'],
+            "director_popularity": row['director_popularity'],
+            "vacances": row['vacances'],  # Les données ont été converties en booléen
+            "saison": row['saison'],
+            "langue": row['langue'],
+            "budget": row['budget'],
+            "genre1": row['genre1'],
+            "reputation_distributeur": row['reputation_distributeur'],
+            "nombre_films_distributeur": row['nombre_films_distributeur']
+        })
 
-    # Organiser les films en fonction des jours de la semaine
-    jours_semaine = [ 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche','lundi', 'mardi']
+    # Envoyer les données à l'API et récupérer les prédictions
+    api_url = "http://fastapimodel.f0bae8f6bpfbazhu.francecentral.azurecontainer.io/predict/"
+    response_data = []
+    for elt in input_data:
+        response = requests.post(api_url, json=elt)
+        response_data.append(response.json())  # Stocker les données de réponse
+
+    predictions = response_data
+    data_loc = pd.DataFrame(predictions)
+    data["prediction"] = data_loc['prediction'].apply(lambda x: round(x / 2000)).astype(int)
+
+    jours_semaine = ['mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche','lundi', 'mardi']
     jours_organises = {jour: [] for jour in jours_semaine}
 
-    # Charger les capacités des salles de cinéma
     salle_capacities = [140, 100, 80, 80]
 
-    # Trier les films par prédiction (du plus élevé au plus faible)
     data = data.sort_values(by='prediction', ascending=False)
 
-    # Séparer les films en trois listes : haute, moyenne et basse prédiction
     haute_prediction = data.nlargest(4, 'prediction')[['titre', 'prediction']].values.tolist()
     moyenne_prediction = data.nlargest(8, 'prediction', keep='last')[['titre', 'prediction']].nsmallest(4, 'prediction', keep='last')[['titre', 'prediction']].values.tolist()
     basse_prediction = data.nlargest(13, 'prediction')[['titre', 'prediction']].nsmallest(4, 'prediction', keep='last')[['titre', 'prediction']].values.tolist()
 
-    # Organiser les films en fonction des jours de la semaine
     jours_organises['mercredi'] = [[film[0], int(film[1] * 0.23)] for film in haute_prediction]
     jours_organises['samedi'] = [[film[0], int(film[1] * 0.38)] for film in haute_prediction]
     jours_organises['dimanche'] = [[film[0], int(film[1] * 0.38)] for film in haute_prediction]
@@ -244,25 +288,21 @@ def bot(request):
 
     jours_organises['lundi'] = [[film[0], int(film[1] * 0.50)] for film in sorted(basse_prediction, key=lambda x: x[1], reverse=True)]
     jours_organises['jeudi'] = [[film[0], int(film[1] * 0.50)] for film in sorted(basse_prediction, key=lambda x: x[1], reverse=True)]
-    
+
     for jour, films in jours_organises.items():
         for film in films:
             prediction = film[1]
             salle_capacity = salle_capacities[films.index(film)]
             taux_remplissage = (prediction * 100) / salle_capacity
             film.append(taux_remplissage)
-    
+
     return render(request, 'apllication_cine/bot.html', context={'jours_organises': jours_organises, 'salle_capacities': salle_capacities})
 
 
-    
 @register.filter
 def get_item(list, index):
-        return list[index]
+    return list[index]
 
-
-    
-    
     
     
     
@@ -289,42 +329,57 @@ def prediction_vs_reel_page(request):
     # Charger les variables d'environnement à partir du fichier .env
     load_dotenv()
 
-    # Récupérer les informations de connexion à la base de données à partir des variables d'environnement
     server = os.environ['DB_SERVER']
     database = os.environ['DB_DATABASE']
     username = os.environ['DB_USERNAME']
     password = os.environ['DB_PASSWORD']
     driver = os.environ['DRIVER']
 
-    # Construire la chaîne de connexion à la base de données
     cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
 
-    # Exécuter une requête SQL pour récupérer les données de la table films_prediction
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
-    # Vérifier si les données sont vides
     if data.empty:
-        messages.warning(request, 'Aucune donnée trouvée dans la base de données.')
-        return render(request, 'apllication_cine/prediction_VS_reel.html', context={'is_data_empty': True})
+        return render(request, 'apllication_cine/bot.html', context={'is_data_empty': True})
 
-    # Récupérer le répertoire du fichier views.py (chemin relatif)
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Charger le modèle pickles
-    model_path = os.path.normpath(os.path.join(current_dir, 'catboost.pkl'))
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
-
-    # Préparer les données pour la prédiction
     categorical_features = ["acteur_1", "acteur_2", "acteur_3", "realisateur", "distributeur", "genre", "genre1" ,"pays", "langue",'vacances', 'saison', 'type','reputation_distributeur', 'nombre_films_distributeur']
     numerical_features = ["duree", "nominations", "prix", "annee_production", 'actor_1_popularity', 'actor_2_popularity', 'actor_3_popularity', 'director_popularity', 'budget']
     X = data[categorical_features + numerical_features]
 
-    # Faire la prédiction
-    predictions = model.predict(X)
+    # Convertir les données en un format compatible avec l'API
+    input_data = []
+    for index, row in X.iterrows():
+        input_data.append({
+            "duree": row['duree'],
+            "genre": row['genre'],
+            "pays": row['pays'],
+            "type": row['type'],
+            "annee_production": row['annee_production'],
+            "actor_1_popularity": row['actor_1_popularity'],
+            "actor_2_popularity": row['actor_2_popularity'],
+            "actor_3_popularity": row['actor_3_popularity'],
+            "director_popularity": row['director_popularity'],
+            "vacances": row['vacances'],  # Les données ont été converties en booléen
+            "saison": row['saison'],
+            "langue": row['langue'],
+            "budget": row['budget'],
+            "genre1": row['genre1'],
+            "reputation_distributeur": row['reputation_distributeur'],
+            "nombre_films_distributeur": row['nombre_films_distributeur']
+        })
 
-    # Ajouter les prédictions aux données
-    data['prediction'] = np.floor(predictions / 2000).astype(int)
+    # Envoyer les données à l'API et récupérer les prédictions
+    api_url = "http://fastapimodel.f0bae8f6bpfbazhu.francecentral.azurecontainer.io/predict/"
+    response_data = []
+    for elt in input_data:
+        response = requests.post(api_url, json=elt)
+        response_data.append(response.json())  # Stocker les données de réponse
+
+    predictions = response_data
+    data_loc = pd.DataFrame(predictions)
+    data["prediction"] = data_loc['prediction'].apply(lambda x: round(x / 2000)).astype(int)
     
     if request.method == 'POST':
         # Récupérer les résultats réels saisis par l'utilisateur
