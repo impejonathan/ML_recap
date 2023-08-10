@@ -1,0 +1,19 @@
+{% extends 'apllication_cine/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <!-- Autres éléments HTML ici -->
+  
+  <div class="row justify-content-center align-items-center" style="height: 80vh;">
+    <div class="col-md-8 text-center">
+      <video controls style="max-width: 100%;">
+        <source src="{% static 'img/video.mp4' %}" type="video/mp4">
+        Votre navigateur ne prend pas en charge la lecture de vidéos.
+      </video>
+    </div>
+  </div>
+  
+  <!-- Autres éléments HTML ici -->
+</div>
+{% endblock content %}
