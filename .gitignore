@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 .env
 
+=======
+# Ignorer les fichiers
+test1.py
+>>>>>>> 577e307799b9ee4e9cae7cb53afd7eea800fb180
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
