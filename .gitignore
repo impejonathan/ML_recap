@@ -1,9 +1,14 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 /data
 .env
 
 =======
 
+=======
+/test
+/data
+>>>>>>> 45910833343a5b4e0647f91c3f708a73a9cabfe7
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
