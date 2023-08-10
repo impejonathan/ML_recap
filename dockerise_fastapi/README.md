@@ -1,6 +1,6 @@
 # Dockerisation de l'API FastAPI
 
-Ce projet vous guide à travers le processus de dockerisation d'une API FastAPI utilisant Docker et Docker Compose. L'API prédit les entrées en première semaine pour les films en utilisant un modèle CatBoost pré-entraîné.
+Ce readme vous guide à travers le processus de dockerisation d'une API FastAPI utilisant Docker. L'API prédit les entrées en première semaine pour les films en utilisant un modèle CatBoost pré-entraîné.
 ## Configuration Requise
 
     Docker
