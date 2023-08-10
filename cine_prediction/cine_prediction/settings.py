@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-c*$hy#9+icdzkotrkys#!*i434p%7(9$c7ydjk=b661&d(5szt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1'] # "localhost","0.0.0.0", "20.199.61.184" , "ml-immo.h6fgbca2b4d0c9dp.francecentral.azurecontainer.io"
+ALLOWED_HOSTS = ["*","20.19.138.3","cinedjango.dbgxgzc3b6dzdbb5.francecentral.azurecontainer.io"] # "localhost","0.0.0.0", "20.199.61.184" , "ml-immo.h6fgbca2b4d0c9dp.francecentral.azurecontainer.io"
 
 
 # Application definition

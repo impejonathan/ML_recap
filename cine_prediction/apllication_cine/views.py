@@ -46,7 +46,7 @@ from django.shortcuts import render
 def handler404(request, exception):
     return render(request, 'apllication_cine/404.html', status=404)
 
-    
+@login_required(login_url='login')  
 def video(request):
     return render(request, 
                   'apllication_cine/video.html',
@@ -107,7 +107,7 @@ def delete_data(request):
     return HttpResponseRedirect(reverse('prediction'))
 
 
-
+@login_required(login_url='login')
 def prediction_page(request):
     load_dotenv()
 
@@ -212,7 +212,7 @@ def scraping_view(request):
     
 
     
-    
+@login_required(login_url='login')   
 def bot(request):
     load_dotenv()
 
@@ -324,7 +324,7 @@ def get_item(list, index):
 
 from datetime import datetime
 from django.contrib import messages
-
+@login_required(login_url='login')
 def prediction_vs_reel_page(request):
     # Charger les variables d'environnement à partir du fichier .env
     load_dotenv()
