@@ -13,3 +13,9 @@ fastapi==0.95.0
 uvicorn==0.23.2
 gunicorn==20.1.0
 whitenoise
+
+# C:\Users\impej\Documents\BRIEF\ML_recap\cine_prediction\cine_prediction\settings.py
+# cine_prediction\cine_prediction\settings.py
+
+# C:\Users\impej\Documents\BRIEF\ML_recap\cine_prediction\apllication_cine\static
+# cine_prediction\apllication_cine\static
