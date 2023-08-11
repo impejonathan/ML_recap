@@ -1,0 +1,84 @@
+
+{% extends 'apllication_cine/base.html' %}
+{% load static %}
+
+{% comment %} ------------prediction---------- {% endcomment %}
+
+{% block content %}
+<div class="container text-center">
+    {% comment %} <h1 class="mt-4 mb-4">Page des films à venir</h1> {% endcomment %}
+    <br>
+    <form action="{% url 'scraping' %}" method="post">
+        {% csrf_token %}
+        <img src="{% static 'img/genial-o_2.png' %}" alt="Logo" width="75" height="75" class="d-inline-block align-top me-2">
+        <input type="submit" class="btn btn-warning mt-3 " value="Lancer la prédiction">
+        <img src="{% static 'img/genial-o_2.png' %}" alt="Logo" width="75" height="75" class="d-inline-block align-top ms-2">
+    </form>
+    <br><br>
+    {% if is_data_empty %}
+    <div class="alert alert-warning">
+        Veuillez appuyer sur le bouton lancer la prédiction.
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Estimation pour le ciné </th>
+                    <th>Estimation nationale </th>
+
+                    <th>Titre</th>
+                    <th>Acteur 1</th>
+                    <th>Acteur 2</th>
+                    <th>Acteur 3</th>
+                    {% comment %} <th>Réalisateur</th> {% endcomment %}
+                    {% comment %} <th>Distributeur</th> {% endcomment %}
+                    <th>Durée</th>
+                    <th>Genre</th>
+                    {% comment %} <th>Pays</th> {% endcomment %}
+                    {% comment %} <th>Nominations</th> {% endcomment %}
+                    {% comment %} <th>Prix</th> {% endcomment %}
+                    <th>Date</th>
+                    {% comment %} <th>Année de production</th> {% endcomment %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for index, row in data.iterrows %}
+                <tr>
+                    <td class="fw-bold">{{ row.prediction }}</td>
+                    <td class="fw-bold">{{ row.prediction_national }}</td>
+                    <td>{{ row.titre }}</td>
+                    <td>{{ row.acteur_1 }}</td>
+                    <td>{{ row.acteur_2 }}</td>
+                    <td>{{ row.acteur_3 }}</td>
+                    {% comment %} <td>{{ row.realisateur }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.distributeur }}</td> {% endcomment %}
+                    <td>{{ row.duree }}</td>
+                    <td>{{ row.genre }}</td>
+                    {% comment %} <td>{{ row.pays }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.nominations }}</td> {% endcomment %}
+                    {% comment %} <td>{{ row.prix }}</td> {% endcomment %}
+                    <td>{{ row.date }}</td>
+                    {% comment %} <td>{{ row.annee_production }}</td> {% endcomment %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br><br>
+        {% if not is_data_empty %}
+<div class="text-center">
+    <form action="{% url 'delete_data' %}" method="post">
+        {% csrf_token %}
+        <img src="{% static 'img/chaos.png' %}" alt="Logo" width="75" height="75" class="d-inline-block align-top me-2">
+        <input type="submit" class="btn btn-danger mt-3" value="Effacer les données">
+        <img src="{% static 'img/chaos.png' %}" alt="Logo" width="75" height="75" class="d-inline-block align-top me-2">
+
+    </form>
+</div><br><br>
+{% endif %}
+
+    </div>
+    {% endif %}
+</div>
+
+{% endblock content %}
