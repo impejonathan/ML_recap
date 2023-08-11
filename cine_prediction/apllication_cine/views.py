@@ -1,4 +1,3 @@
-# authentication/views.py
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate , logout
@@ -21,7 +20,15 @@ from django.db import transaction  # Importez le module transaction
 import requests
 import json
 
-
+def get_db_connection():
+    load_dotenv()
+    server = os.environ['DB_SERVER']
+    database = os.environ['DB_DATABASE']
+    username = os.environ['DB_USERNAME']
+    password = os.environ['DB_PASSWORD']
+    driver = os.environ['DRIVER']
+    cnxn = pyodbc.connect('DRIVER=' + driver + ';SERVER=' + server + ';PORT=1433;DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
+    return cnxn
 
 @register.filter
 def mul(value, arg):
@@ -89,16 +96,7 @@ def signup_page(request):
 
 
 def delete_data(request):
-    load_dotenv()
-
-    server = os.environ['DB_SERVER']
-    database = os.environ['DB_DATABASE']
-    username = os.environ['DB_USERNAME']
-    password = os.environ['DB_PASSWORD']
-    driver = os.environ['DRIVER']
-
-    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
-
+    cnxn = get_db_connection()
     cursor = cnxn.cursor()
     cursor.execute("DELETE FROM [dbo].[films_prediction]")
     cnxn.commit()
@@ -109,16 +107,7 @@ def delete_data(request):
 
 @login_required(login_url='login')
 def prediction_page(request):
-    load_dotenv()
-
-    server = os.environ['DB_SERVER']
-    database = os.environ['DB_DATABASE']
-    username = os.environ['DB_USERNAME']
-    password = os.environ['DB_PASSWORD']
-    driver = os.environ['DRIVER']
-
-    cnxn = pyodbc.connect('DRIVER=' + driver + ';SERVER=' + server + ';PORT=1433;DATABASE=' + database + ';UID=' + username + ';PWD=' + password)
-
+    cnxn = get_db_connection()
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -214,16 +203,7 @@ def scraping_view(request):
     
 @login_required(login_url='login')   
 def bot(request):
-    load_dotenv()
-
-    server = os.environ['DB_SERVER']
-    database = os.environ['DB_DATABASE']
-    username = os.environ['DB_USERNAME']
-    password = os.environ['DB_PASSWORD']
-    driver = os.environ['DRIVER']
-
-    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
-
+    cnxn = get_db_connection()
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
     if data.empty:
@@ -262,9 +242,8 @@ def bot(request):
     response_data = []
     for elt in input_data:
         response = requests.post(api_url, json=elt)
-        response_data.append(response.json())  # Stocker les données de réponse
-
-    predictions = response_data
+        response_data.append(response.json())
+        predictions = response_data
     data_loc = pd.DataFrame(predictions)
     data["prediction"] = data_loc['prediction'].apply(lambda x: round(x / 2000)).astype(int)
 
@@ -303,40 +282,11 @@ def bot(request):
 def get_item(list, index):
     return list[index]
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-# @login_required(login_url='login')
-
 from datetime import datetime
 from django.contrib import messages
 @login_required(login_url='login')
 def prediction_vs_reel_page(request):
-    # Charger les variables d'environnement à partir du fichier .env
-    load_dotenv()
-
-    server = os.environ['DB_SERVER']
-    database = os.environ['DB_DATABASE']
-    username = os.environ['DB_USERNAME']
-    password = os.environ['DB_PASSWORD']
-    driver = os.environ['DRIVER']
-
-    cnxn = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
-
+    cnxn = get_db_connection()
     data = pd.read_sql_query('SELECT * FROM [dbo].[films_prediction]', cnxn)
 
     if data.empty:
@@ -416,7 +366,8 @@ def prediction_vs_reel_page(request):
                             target.Entrees_1ere_semaine = source.Entrees_1ere_semaine,
                             target.sortie_france = ?
                         WHEN NOT MATCHED THEN INSERT (titre, acteur_1, acteur_2, acteur_3, realisateur, distributeur, duree, genre, pays, nominations, prix, annee_production, Entrees_1ere_semaine, sortie_france)
-                        VALUES (source.titre, source.acteur_1, source.acteur_2, source.acteur_3, source.realisateur, source.distributeur, source.duree, source.genre, source.pays, source.nominations, source.prix, source.annee_production, source.Entrees_1ere_semaine, ?);
+                        VALUES (source.titre, source.acteur_1, source.acteur_2, source.acteur_3, source.realisateur
+                                                    , source.distributeur, source.duree, source.genre, source.pays, source.nominations, source.prix, source.annee_production, source.Entrees_1ere_semaine, ?);
                     """, row["titre"], row["acteur_1"], row["acteur_2"], row["acteur_3"], row["realisateur"], row["distributeur"], row["duree"], row["genre"], row["pays"], row["nominations"], row["prix"], row["annee_production"], row["real_result"] * 2000, datetime.now().strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'))
                     cursor.execute("DELETE FROM [dbo].[films_prediction] WHERE titre = ?", row["titre"])
             cnxn.commit()
